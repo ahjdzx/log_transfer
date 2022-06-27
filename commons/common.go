@@ -4,8 +4,9 @@ import "github.com/Shopify/sarama"
 
 // kafka 配置文件
 type KafkaConfig struct {
-	Address string `ini:"address"`
-	Topic   string `ini:"topic"`
+	Address string   `ini:"address"`
+	Topic   string   `ini:"topic"`
+	Uids    []string `ini:"uids"`
 }
 
 // es配置文件

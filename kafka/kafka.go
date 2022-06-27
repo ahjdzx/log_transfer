@@ -1,6 +1,8 @@
 package kafka
 
 import (
+	"strings"
+
 	"logtransfer/commons"
 
 	"github.com/Shopify/sarama"
@@ -45,7 +47,7 @@ func CreateConsumer(address []string, topic string) (consumerList []commons.Kafk
 }
 
 // 从kafka中取出数据(开始消费)
-func GetMsgFromKafka(consumerList []commons.KafkaConsumer, msgChan chan<- string) {
+func GetMsgFromKafka(consumerList []commons.KafkaConsumer, msgChan chan<- string, uids []string) {
 	for _, comsumer := range consumerList {
 		go func(c commons.KafkaConsumer) {
 			for {
@@ -57,7 +59,12 @@ func GetMsgFromKafka(consumerList []commons.KafkaConsumer, msgChan chan<- string
 					return
 				// 持续性的从kafka中获取数据发送到msgChan
 				case msg := <-c.ComsumerPartition.Messages():
-					msgChan <- string(msg.Value)
+					message := string(msg.Value)
+					for _, uid := range uids {
+						if strings.Contains(message, uid) {
+							msgChan <- message
+						}
+					}
 				}
 			}
 		}(comsumer)

@@ -14,7 +14,7 @@ import (
 
 func main() {
 	// 初始化配置文件
-	var cfg = new(commons.Config)
+	cfg := new(commons.Config)
 	err := ini.MapTo(cfg, "./config/logtransfer.ini")
 	if err != nil {
 		logrus.Errorf("load config file failed, %v", err)
@@ -32,7 +32,7 @@ func main() {
 	// 生成一个chan用于保存数据
 	msgChan := make(chan string, 500)
 	// 消费者从kafka中消费数据发送到msgChan
-	kafka.GetMsgFromKafka(partitionConsumerList, msgChan)
+	kafka.GetMsgFromKafka(partitionConsumerList, msgChan, cfg.KafkaConfig.Uids)
 
 	// 连接es
 	esClient, err := es.ESInit(cfg.ESConfig.Address)
@@ -46,17 +46,22 @@ func main() {
 	// 保存msgChan中的数据到es
 	esClient.SaveData(msgChan)
 
-	// mem := new(runtime.MemStats)
-	// go func() {
-	// 	for {
-	// 		select {
-	// 		case <-time.After(time.Second):
-	// 			runtime.ReadMemStats(mem)
-	// 			fmt.Println("当前Goroutine数量:", runtime.NumGoroutine())
-	// 			fmt.Printf("申请并在使用的字节数:%v, 申请内存的次数:%v, 从系统中获取的字节数:%v\n", mem.Alloc, mem.Mallocs, mem.Sys)
-	// 		}
-	// 	}
-	// }()
+	/*
+		// mem := new(runtime.MemStats)
+		go func() {
+			for {
+				select {
+						 case <-time.After(time.Second):
+				runtime.ReadMemStats(mem)
+				fmt.Println("当前Goroutine数量:", runtime.NumGoroutine())
+				fmt.Printf("申请并在使用的字节数:%v, 申请内存的次数:%v, 从系统中获取的字节数:%v\n", mem.Alloc, mem.Mallocs, mem.Sys)
+
+				case msg := <-msgChan:
+					logrus.Info(msg)
+				}
+			}
+		}()
+	*/
 
 	select {}
 }
