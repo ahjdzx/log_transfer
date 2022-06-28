@@ -2,6 +2,7 @@ package es
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/olivere/elastic/v7"
@@ -10,6 +11,19 @@ import (
 
 type ESMsg struct {
 	Message string `json:"message"`
+}
+
+type Message struct {
+	Lib         string `json:"lib"`
+	ReceiveTime int64  `json:"receive_time"`
+	Type        string `json:"type"`
+	TrackID     int    `json:"_track_id"`
+	ReportTime  int64  `json:"report_time"`
+	DistinctID  string `json:"distinct_id"`
+	SinkTime    int64  `json:"sink_time"`
+	Time        int64  `json:"time"`
+	Event       string `json:"event"`
+	Properties  string `json:"properties"`
 }
 
 type ESClient struct {
@@ -54,11 +68,17 @@ func (esClient ESClient) SaveData(msgChan <-chan string) {
 					break
 				}
 				logrus.Info("revive a message from msgchan, save to es")
-				p1 := ESMsg{msg}
-				_, err := esClient.client.Index().Index(esClient.index).BodyJson(p1).Do(context.Background())
+				// p1 := ESMsg{msg}
+				message := &Message{}
+				err := json.Unmarshal([]byte(msg), message)
+				if err != nil {
+					fmt.Println("Unmarshal message failed, err:", err)
+					continue
+				}
+				_, err = esClient.client.Index().Index(esClient.index).BodyJson(message).Do(context.Background())
 				if err != nil {
 					fmt.Println("save message failed, err:", err)
-					esClient.CloseChan <- struct{}{}
+					// esClient.CloseChan <- struct{}{}
 					// logrus.Errorf("save message to es failed, message:%s, id:%v, index:%v, type:%v\n", msg, put1.Id, put1.Index, put1.Type)
 				}
 			}
