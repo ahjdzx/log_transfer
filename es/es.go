@@ -2,11 +2,11 @@ package es
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/olivere/elastic/v7"
 	"github.com/sirupsen/logrus"
+	"github.com/tidwall/gjson"
 )
 
 type ESMsg struct {
@@ -14,7 +14,6 @@ type ESMsg struct {
 }
 
 type Message struct {
-	Lib         string `json:"lib"`
 	ReceiveTime int64  `json:"receive_time"`
 	Type        string `json:"type"`
 	TrackID     int    `json:"_track_id"`
@@ -23,6 +22,7 @@ type Message struct {
 	SinkTime    int64  `json:"sink_time"`
 	Time        int64  `json:"time"`
 	Event       string `json:"event"`
+	Lib         string `json:"lib"`
 	Properties  string `json:"properties"`
 }
 
@@ -69,13 +69,25 @@ func (esClient ESClient) SaveData(msgChan <-chan string) {
 				}
 				logrus.Info("revive a message from msgchan, save to es")
 				// p1 := ESMsg{msg}
-				message := &Message{}
-				err := json.Unmarshal([]byte(msg), message)
-				if err != nil {
-					fmt.Println("Unmarshal message failed, err:", err)
-					continue
+				message := &Message{
+					ReceiveTime: gjson.Get(msg, "receive_time").Int(),
+					Type:        gjson.Get(msg, "type").String(),
+					TrackID:     int(gjson.Get(msg, "_track_id").Int()),
+					ReportTime:  gjson.Get(msg, "report_time").Int(),
+					DistinctID:  gjson.Get(msg, "distinct_id").String(),
+					SinkTime:    gjson.Get(msg, "sink_time").Int(),
+					Time:        gjson.Get(msg, "time").Int(),
+					Event:       gjson.Get(msg, "event").String(),
+					Lib:         gjson.Get(msg, "lib").String(),
+					Properties:  gjson.Get(msg, "properties").String(),
 				}
-				_, err = esClient.client.Index().Index(esClient.index).BodyJson(message).Do(context.Background())
+
+				//err := json.Unmarshal([]byte(msg), message)
+				//if err != nil {
+				// fmt.Println("Unmarshal message failed, err:", err)
+				// continue
+				//}
+				_, err := esClient.client.Index().Index(esClient.index).BodyJson(message).Do(context.Background())
 				if err != nil {
 					fmt.Println("save message failed, err:", err)
 					// esClient.CloseChan <- struct{}{}
