@@ -3,10 +3,15 @@ package es
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/olivere/elastic/v7"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
+)
+
+const (
+	TimeLayout = "2006-01-02 15:04:05.000"
 )
 
 type ESMsg struct {
@@ -67,7 +72,6 @@ func (esClient ESClient) SaveData(msgChan <-chan string) {
 					esClient.CloseChan <- struct{}{}
 					break
 				}
-				logrus.Info("revive a message from msgchan, save to es")
 				// p1 := ESMsg{msg}
 				message := &Message{
 					ReceiveTime: gjson.Get(msg, "receive_time").Int(),
@@ -81,6 +85,10 @@ func (esClient ESClient) SaveData(msgChan <-chan string) {
 					Lib:         gjson.Get(msg, "lib").String(),
 					Properties:  gjson.Get(msg, "properties").String(),
 				}
+
+				t := time.UnixMilli(message.Time).Format(TimeLayout)
+
+				logrus.Infof("%v revive a message from msgchan, event: %v, distinct_id: %v", t, message.Event, message.DistinctID)
 
 				//err := json.Unmarshal([]byte(msg), message)
 				//if err != nil {
