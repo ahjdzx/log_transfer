@@ -11,6 +11,7 @@ type KafkaConfig struct {
 
 // es配置文件
 type ESConfig struct {
+	Enable      bool   `ini:"enable"`
 	Address     string `ini:"address"`
 	Index       string `ini:"index"`
 	MaxChanSize int    `ini:"max_chan_size"`

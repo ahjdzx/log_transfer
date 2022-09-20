@@ -34,34 +34,35 @@ func main() {
 	// 消费者从kafka中消费数据发送到msgChan
 	kafka.GetMsgFromKafka(partitionConsumerList, msgChan, cfg.KafkaConfig.Uids)
 
-	// 连接es
-	esClient, err := es.ESInit(cfg.ESConfig.Address)
-	if err != nil {
-		logrus.Errorf("connect to es failed, %v", err)
-		return
-	}
-	logrus.Info("connect to es success")
-	// 设置es的index
-	esClient.SetIndex(cfg.ESConfig.Index)
-	// 保存msgChan中的数据到es
-	esClient.SaveData(msgChan)
-
-	/*
-		// mem := new(runtime.MemStats)
+	if cfg.ESConfig.Enable {
+		// 连接es
+		esClient, err := es.ESInit(cfg.ESConfig.Address)
+		if err != nil {
+			logrus.Errorf("connect to es failed, %v", err)
+			return
+		}
+		logrus.Info("connect to es success")
+		// 设置es的index
+		esClient.SetIndex(cfg.ESConfig.Index)
+		// 保存msgChan中的数据到es
+		esClient.SaveData(msgChan)
+	} else {
+		//mem := new(runtime.MemStats)
 		go func() {
 			for {
 				select {
-						 case <-time.After(time.Second):
-				runtime.ReadMemStats(mem)
-				fmt.Println("当前Goroutine数量:", runtime.NumGoroutine())
-				fmt.Printf("申请并在使用的字节数:%v, 申请内存的次数:%v, 从系统中获取的字节数:%v\n", mem.Alloc, mem.Mallocs, mem.Sys)
-
+				/*
+					case <-time.After(time.Second):
+						runtime.ReadMemStats(mem)
+						fmt.Println("当前Goroutine数量:", runtime.NumGoroutine())
+						fmt.Printf("申请并在使用的字节数:%v, 申请内存的次数:%v, 从系统中获取的字节数:%v\n", mem.Alloc, mem.Mallocs, mem.Sys)
+				*/
 				case msg := <-msgChan:
 					logrus.Info(msg)
 				}
 			}
 		}()
-	*/
+	}
 
 	select {}
 }
